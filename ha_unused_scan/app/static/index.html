@@ -121,7 +121,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const CHEV='<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
 const SRCH='<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
 const V={sur:'Sûr',probable:'Probable',attention:'À vérifier'}, VORD={sur:0,probable:1,attention:2,utilise:3};
-const S={data:null,arch:[],autoarch:[],tab:'files',sel:new Set(),sela:new Set(),ff:'cand',af:'prob',q:''};
+const S={data:null,arch:[],autoarch:[],tab:'files',sel:new Set(),sela:new Set(),ff:'cand',af:'prob',q:'',qraw:''};
 
 async function api(p,body){
   const r=await fetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
@@ -154,12 +154,13 @@ function bar(){
 /* ---------- filtres ---------- */
 const fPred={cand:f=>f.statut==='inutilise',sur:f=>f.verdict==='sur',probable:f=>f.verdict==='probable',attention:f=>f.verdict==='attention',partiel:f=>f.statut==='partiel',ok:f=>f.statut==='ok'};
 const aPred={prob:x=>x.raisons.length>0,off:x=>x.desactivee,never:x=>x.jamais,old:(x,a)=>!x.jamais&&x.jours!==null&&x.jours>=a.jours,broken:x=>x.cassees.length>0,all:()=>true};
-const qOk=(txt)=>!S.q||txt.toLowerCase().includes(S.q);
-const fMatch=f=>qOk(f.fichier+' '+f.entites.map(e=>e.id+' '+e.nom).join(' '));
-const aMatch=x=>qOk(x.nom+' '+x.id+' '+x.cassees.join(' '));
+const norm=t=>String(t).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const qOk=(txt)=>{if(!S.q)return true;const t=norm(txt);return S.q.split(/\s+/).every(w=>t.includes(w));};
+const fMatch=f=>qOk(f.fichier+' '+(f.raisons||[]).join(' ')+' '+f.entites.map(e=>e.id+' '+e.nom+' '+(e.cite_par||[]).join(' ')).join(' '));
+const aMatch=x=>qOk(x.nom+' '+(x.id||'')+' '+(x.uid||'')+' '+x.cassees.join(' ')+' '+x.raisons.join(' '));
 const chips=(list,cur,cls)=>'<div class="chips">'+list.map(c=>'<button class="'+cls+(cur===c[0]?' on':'')+'" data-k="'+c[0]+'">'+esc(c[1])+' <span class="cnt">'+c[2]+'</span></button>').join('')+'</div>';
-const searchBox=()=>'<div class="search">'+SRCH+'<input id="q" type="search" placeholder="Rechercher un fichier ou une entité…" value="'+esc(S.q)+'" aria-label="Rechercher"></div>';
-function bindSearch(){const q=$('#q');if(!q)return;q.oninput=()=>{S.q=q.value.trim().toLowerCase();const p=q.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p);};}
+const searchBox=()=>'<div class="search">'+SRCH+'<input id="q" type="search" placeholder="Rechercher un fichier ou une entité…" value="'+esc(S.qraw)+'" aria-label="Rechercher"></div>';
+function bindSearch(){const q=$('#q');if(!q)return;q.oninput=()=>{S.qraw=q.value;S.q=norm(q.value.trim());const p=q.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p);};}
 
 /* ---------- statistiques ---------- */
 function renderStats(){
@@ -180,10 +181,11 @@ function renderStats(){
 function renderFiles(){
   const D=S.data;if(!D){$('#tab-files').innerHTML='<div class="empty">Cliquez sur « Analyser ».</div>';return;}
   const F=D.fichiers,c=k=>F.filter(fPred[k]).length;
-  const list=F.filter(fPred[S.ff]).filter(fMatch).sort((a,b)=>(VORD[a.verdict]-VORD[b.verdict])||a.fichier.localeCompare(b.fichier));
+  const list=(S.q?F:F.filter(fPred[S.ff])).filter(fMatch).sort((a,b)=>(VORD[a.verdict]-VORD[b.verdict])||a.fichier.localeCompare(b.fichier));
   let h='<div class="toolbar">'+searchBox()+'<button id="b-pick">Cocher les « Sûr »</button><button id="b-unpick" class="ghost">Tout décocher</button></div>'
    +'<div class="toolbar">'+chips([['cand','Candidats',c('cand')],['sur','Sûrs',c('sur')],['probable','Probables',c('probable')],['attention','À vérifier',c('attention')],['partiel','Partiels',c('partiel')],['ok','Utilisés',c('ok')]],S.ff,'ff')+'</div>';
-  if(!list.length)h+='<div class="empty">Rien à afficher pour ce filtre.</div>';
+  if(S.q)h+='<p class="note" role="status">'+(list.length?list.length+' résultat(s)':'Aucun résultat')+' pour « '+esc(S.qraw.trim())+' » dans tous les éléments (le filtre est ignoré pendant la recherche).</p>';
+  if(!list.length&&!S.q)h+='<div class="empty">Rien à afficher pour ce filtre.</div>';
   h+='<div class="grid">'+list.map(f=>{const inu=f.statut==='inutilise';
     const bc=inu?f.verdict:f.statut,bl=inu?V[f.verdict]:(f.statut==='partiel'?'Partiel '+f.utilisees+'/'+f.total:'Utilisé');
     return '<div class="card v-'+f.verdict+'" data-f="'+esc(f.fichier)+'"><div class="row">'
@@ -208,10 +210,11 @@ function renderAutos(){
   if(!S.data){$('#tab-autos').innerHTML='<div class="empty">Cliquez sur « Analyser ».</div>';return;}
   if(!a){$('#tab-autos').innerHTML='<div class="empty">Les automatisations ne peuvent pas être analysées (API Home Assistant indisponible).</div>';return;}
   const n=k=>a.liste.filter(x=>aPred[k](x,a)).length;
-  const list=a.liste.filter(x=>aPred[S.af](x,a)).filter(aMatch);
+  const list=(S.q?a.liste:a.liste.filter(x=>aPred[S.af](x,a))).filter(aMatch);
   let h='<div class="toolbar">'+searchBox()+'<button id="a-pick">Cocher les désactivées</button><button id="a-unpick" class="ghost">Tout décocher</button></div>'
    +'<div class="toolbar">'+chips([['prob','À examiner',n('prob')],['off','Désactivées',n('off')],['never','Jamais lancées',n('never')],['old','Anciennes (> '+a.jours+' j)',n('old')],['broken','Entités cassées',n('broken')],['all','Toutes',n('all')]],S.af,'af')+'</div>';
-  if(!list.length)h+='<div class="empty">Rien à afficher pour ce filtre.</div>';
+  if(S.q)h+='<p class="note" role="status">'+(list.length?list.length+' résultat(s)':'Aucun résultat')+' pour « '+esc(S.qraw.trim())+' » dans tous les éléments (le filtre est ignoré pendant la recherche).</p>';
+  if(!list.length&&!S.q)h+='<div class="empty">Rien à afficher pour ce filtre.</div>';
   h+='<div class="grid">'+list.map(x=>'<div class="card v-'+(x.raisons.length?'probable':'utilise')+'" data-u="'+esc(x.uid||'')+'"><div class="row">'
     +(x.uid?'<input type="checkbox" class="sa" '+(S.sela.has(x.uid)?'checked':'')+' aria-label="Sélectionner '+esc(x.nom)+'">':'<span style="width:26px"></span>')
     +'<div class="grow"><div class="name">'+esc(x.nom)+'</div><div class="why">'+esc(x.raisons.length?x.raisons.join(' · '):'Aucun problème détecté')+(x.uid?'':' · sans identifiant : non archivable ici (définie dans un fichier)')+'</div>'

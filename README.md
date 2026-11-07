@@ -19,8 +19,12 @@ et les **archive de façon réversible** depuis une page du menu latéral de Hom
 
 ## Installation
 
+[![Ajouter le dépôt à mon Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fxez7082%2Fha-unused-scan)
+
+Ou manuellement :
+
 1. Home Assistant → **Paramètres → Modules complémentaires → Boutique → ⋮ → Dépôts**
-2. Ajouter : `https://github.com/VOTRE_COMPTE/ha-unused-scan`
+2. Ajouter : `https://github.com/xez7082/ha-unused-scan`
 3. Installer **Nettoyeur de configuration**, démarrer, puis activer « Afficher dans la barre latérale ».
 
 ### Installation locale (test)
@@ -44,6 +48,10 @@ Copier le dossier `ha_unused_scan/` dans le partage Samba `addons`, puis Boutiqu
 
 Un usage dynamique (nom d'entité construit dans un modèle) ou externe à Home Assistant n'est pas détectable.
 Les résultats sont des **candidats**, pas des certitudes.
+
+## Contribuer
+
+Voir [CONTRIBUTING.md](CONTRIBUTING.md). Signalement de faille : [SECURITY.md](SECURITY.md).
 
 ## Licence
 

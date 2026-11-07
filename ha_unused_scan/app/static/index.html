@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nettoyeur de configuration</title>
+<style>
+:root,[data-theme=dark]{--bg:#0d1117;--s1:#161c26;--s2:#1e2733;--line:#38465a;--txt:#f2f6fa;--dim:#b9c6d4;--acc:#5aaeff;--accbg:#1b5fa8;--ok:#56d27c;--warn:#f2c14e;--bad:#ff7b72;--on:#0b1018;--shadow:0 1px 3px rgba(0,0,0,.5)}
+[data-theme=light]{--bg:#f4f6f9;--s1:#ffffff;--s2:#e9eef4;--line:#8493a6;--txt:#0b1320;--dim:#38485c;--acc:#0a5fc2;--accbg:#0a5fc2;--ok:#126a2b;--warn:#8a5a00;--bad:#b3261e;--on:#ffffff;--shadow:0 1px 3px rgba(0,0,0,.18)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+code{font:14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--acc);word-break:break-all}
+button{min-height:48px;padding:0 18px;font:600 16px system-ui,sans-serif;border-radius:10px;border:1.5px solid var(--line);background:var(--s2);color:var(--txt);cursor:pointer;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+button:hover:not(:disabled){border-color:var(--acc)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.pri{background:var(--accbg);border-color:var(--accbg);color:#fff}
+button.dng{background:#a8342b;border-color:#a8342b;color:#fff}
+button.ghost{background:transparent}
+svg{width:22px;height:22px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+header.top{position:sticky;top:0;z-index:20;background:var(--s1);border-bottom:1px solid var(--line);box-shadow:var(--shadow);padding:8px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto;min-width:0}
+.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1b5fa8,#2fbf8a);display:grid;place-items:center;color:#fff}
+.logo svg{width:26px;height:26px}
+h1{font-size:20px;line-height:1.15;margin:0}
+.sub{font-size:14px;color:var(--dim)}
+nav.tabs{display:flex;gap:6px;padding:10px 16px 0;border-bottom:1px solid var(--line);background:var(--bg);overflow-x:auto}
+nav.tabs button{border:0;border-bottom:4px solid transparent;border-radius:8px 8px 0 0;background:transparent;min-height:48px}
+nav.tabs button.on{border-bottom-color:var(--acc);color:var(--acc)}
+.cnt{background:var(--s2);border:1px solid var(--line);border-radius:99px;padding:0 9px;font-size:14px;min-width:26px;text-align:center;color:var(--txt)}
+main{max-width:1500px;margin:0 auto;padding:12px 16px 96px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:0;height:auto;min-height:64px;padding:8px 14px;background:var(--s1);box-shadow:var(--shadow);text-align:left}
+.tile b{font-size:26px;line-height:1.1}
+.tile span{font-size:14px;color:var(--dim);font-weight:500}
+.tile.ok b{color:var(--ok)}.tile.warn b{color:var(--warn)}.tile.bad b{color:var(--bad)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.search{position:relative;flex:1 1 220px;min-width:180px}
+.search svg{position:absolute;left:12px;top:13px;color:var(--dim)}
+.search input{width:100%;min-height:48px;padding:0 12px 0 42px;font:16px system-ui,sans-serif;border-radius:10px;border:1.5px solid var(--line);background:var(--s1);color:var(--txt)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{min-height:48px;padding:0 14px;font-size:15px;border-radius:99px}
+.chips button.on{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.chips button.on .cnt{background:rgba(0,0,0,.18);border-color:transparent;color:inherit}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.card{background:var(--s1);border:1px solid var(--line);border-left:6px solid var(--line);border-radius:10px;box-shadow:var(--shadow);min-width:0;overflow:hidden}
+.card.v-sur{border-left-color:var(--ok)}.card.v-probable{border-left-color:var(--warn)}.card.v-attention{border-left-color:var(--bad)}
+.card.open{grid-column:1/-1}
+.row{display:flex;align-items:center;gap:10px;padding:6px 8px 6px 10px;min-height:56px}
+.row input[type=checkbox]{width:26px;height:26px;flex:0 0 auto;accent-color:var(--acc)}
+.grow{flex:1;min-width:0}
+.name{font-weight:700;font-size:16px;word-break:break-word;line-height:1.25}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--dim)}
+.why{font-size:14px;color:var(--dim);line-height:1.3;margin-top:2px}
+.badge{padding:1px 9px;border-radius:99px;font-size:14px;font-weight:700;white-space:nowrap}
+.b-sur{background:var(--ok);color:var(--on)}.b-probable{background:var(--warn);color:var(--on)}.b-attention{background:var(--bad);color:var(--on)}
+.b-partiel{background:var(--s2);border:1px solid var(--line);color:var(--txt)}.b-ok{background:var(--s2);border:1px solid var(--ok);color:var(--ok)}
+.tg{min-width:48px;padding:0}
+.tg svg{transition:transform .15s}.card.open .tg svg{transform:rotate(180deg)}
+.det{display:none;border-top:1px solid var(--line);padding:6px 12px 10px;background:var(--s2)}
+.card.open .det{display:block}
+.ent{display:grid;grid-template-columns:14px 1fr;gap:4px 10px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:14px;color:var(--dim)}
+.ent:last-child{border:0}
+.dot{width:12px;height:12px;border-radius:50%;margin-top:5px;background:var(--line)}
+.dot.vivante{background:var(--ok)}.dot.indisponible,.dot.absente{background:var(--bad)}
+.ent b{color:var(--txt);font-size:15px}
+h2{font-size:18px;margin:16px 0 8px}
+.empty{background:var(--s1);border:1px dashed var(--line);border-radius:10px;padding:24px;text-align:center;color:var(--dim)}
+.note{font-size:14px;color:var(--dim);margin:12px 0}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--s1);border-top:1px solid var(--line);box-shadow:0 -2px 8px rgba(0,0,0,.35);padding:8px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.bar .msg{flex:1;min-width:200px;font-size:15px}
+.bar .msg.ok{color:var(--ok)}.bar .msg.ko{color:var(--bad)}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:40;background:var(--s2);border:1.5px solid var(--acc);border-radius:12px;padding:12px 18px;max-width:92vw;box-shadow:0 4px 16px rgba(0,0,0,.5);font-weight:600}
+.toast.ko{border-color:var(--bad)}.toast.ok{border-color:var(--ok)}
+dialog{border:1.5px solid var(--line);border-radius:14px;background:var(--s1);color:var(--txt);padding:0;max-width:min(640px,94vw);width:100%}
+dialog::backdrop{background:rgba(0,0,0,.65)}
+.dl{padding:16px 20px}.dl h3{margin:0 0 6px;font-size:20px}
+.dl ul{max-height:36vh;overflow:auto;margin:10px 0;padding-left:22px;font-size:15px}
+.dl .warn{background:var(--s2);border-left:5px solid var(--bad);padding:8px 12px;border-radius:8px;font-size:15px}
+.dl .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+.spin{display:inline-block;width:18px;height:18px;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:r .8s linear infinite}
+@keyframes r{to{transform:rotate(360deg)}}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+@media (max-height:600px){header.top{padding:4px 12px}.logo{width:36px;height:36px}.sub{display:none}nav.tabs{padding-top:4px}.tile{min-height:52px;padding:4px 12px}.tile b{font-size:22px}main{padding-bottom:76px}.bar{padding:4px 12px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19 4l-6.5 6.5"/><path d="M12.5 10.5l1.5 1.5-5 7c-1 1-3 1-4 0l-.5-.5 7-8z"/><path d="M5 21l2-2M9 21l1.5-1.5"/></svg></div>
+    <div><h1>Nettoyeur de configuration</h1><div class="sub" id="sub">Home Assistant — repérer ce qui ne sert plus</div></div>
+  </div>
+  <button id="b-theme" class="ghost" aria-label="Changer de thème (sombre / clair)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+  <button id="b-export" class="ghost" disabled><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Rapport</button>
+  <button id="b-scan" class="pri"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>Analyser</button>
+</header>
+<nav class="tabs" role="tablist">
+  <button data-tab="files" class="on" role="tab">Fichiers <span class="cnt" id="c-files">–</span></button>
+  <button data-tab="autos" role="tab">Automatisations <span class="cnt" id="c-autos">–</span></button>
+  <button data-tab="arch" role="tab">Archive <span class="cnt" id="c-arch">–</span></button>
+</nav>
+<main>
+  <div id="stats"></div>
+  <section id="tab-files"></section>
+  <section id="tab-autos" hidden></section>
+  <section id="tab-arch" hidden></section>
+</main>
+<div class="bar" id="bar" hidden>
+  <div class="msg" id="msg"></div>
+  <button id="b-act" class="dng"></button>
+  <button id="b-check"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Vérifier la configuration</button>
+</div>
+<dialog id="dlg" aria-labelledby="dlg-t"><div class="dl"><h3 id="dlg-t"></h3><div id="dlg-x"></div><ul id="dlg-l"></ul><div id="dlg-w"></div>
+  <div class="acts"><button id="dlg-no">Annuler</button><button id="dlg-ok" class="dng">Archiver</button></div></div></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CHEV='<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+const SRCH='<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
+const V={sur:'Sûr',probable:'Probable',attention:'À vérifier'}, VORD={sur:0,probable:1,attention:2,utilise:3};
+const S={data:null,arch:[],autoarch:[],tab:'files',sel:new Set(),sela:new Set(),ff:'cand',af:'prob',q:''};
+
+async function api(p,body){
+  const r=await fetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
+  const d=await r.json(); if(!r.ok||d.erreur) throw new Error(d.erreur||r.status); return d;}
+let tt;function toast(m,k){const e=$('#toast');e.textContent=m;e.className='toast '+(k||'');e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,7000);}
+function setMsg(html,k){const m=$('#msg');m.className='msg '+(k||'');m.innerHTML=html;m.dataset.keep='1';}
+function confirmDlg({titre,texte,items,warn,ok}){return new Promise(res=>{
+  $('#dlg-t').textContent=titre;$('#dlg-x').textContent=texte||'';$('#dlg-l').innerHTML=items.map(i=>'<li>'+esc(i)+'</li>').join('');
+  $('#dlg-w').innerHTML=warn?'<div class="warn">'+esc(warn)+'</div>':'';$('#dlg-ok').textContent=ok||'Archiver';
+  const d=$('#dlg');const fin=v=>{d.close();res(v);};
+  $('#dlg-ok').onclick=()=>fin(true);$('#dlg-no').onclick=()=>fin(false);d.oncancel=()=>res(false);d.showModal();$('#dlg-no').focus();});}
+
+/* ---------- thème ---------- */
+function applyTheme(t){document.documentElement.dataset.theme=t;}
+try{applyTheme(localStorage.getItem('nc-theme')||'dark');}catch(e){}
+$('#b-theme').onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';applyTheme(n);try{localStorage.setItem('nc-theme',n);}catch(e){}};
+
+/* ---------- onglets / barre ---------- */
+function tab(n){S.tab=n;delete $('#msg').dataset.keep;$$('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===n));
+  ['files','autos','arch'].forEach(x=>$('#tab-'+x).hidden=(x!==n));render();if(n==='arch')loadArch();}
+$$('nav.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+function bar(){
+  const A=S.tab==='autos',F=S.tab==='files',D=S.data;
+  $('#bar').hidden=!((F&&D&&D.fichiers.length)||(A&&D&&D.automatisations));
+  const n=A?S.sela.size:S.sel.size;
+  $('#b-act').innerHTML='<svg viewBox="0 0 24 24"><path d="M3 7h18M5 7v13h14V7M9 11h6M8 3h8v4H8z"/></svg>'+(A?'Archiver les automatisations':'Archiver la sélection')+(n?' ('+n+')':'');
+  $('#b-act').disabled=!n;$('#b-check').hidden=A;
+  const m=$('#msg');if(!m.dataset.keep){m.className='msg';m.textContent=n?n+' sélectionné(s)':(A?"Archiver retire l'automatisation de automations.yaml (sauvegarde faite) et recharge les automatisations.":'Après archivage : vérifiez la configuration, puis redémarrez Home Assistant.');}}
+
+/* ---------- filtres ---------- */
+const fPred={cand:f=>f.statut==='inutilise',sur:f=>f.verdict==='sur',probable:f=>f.verdict==='probable',attention:f=>f.verdict==='attention',partiel:f=>f.statut==='partiel',ok:f=>f.statut==='ok'};
+const aPred={prob:x=>x.raisons.length>0,off:x=>x.desactivee,never:x=>x.jamais,old:(x,a)=>!x.jamais&&x.jours!==null&&x.jours>=a.jours,broken:x=>x.cassees.length>0,all:()=>true};
+const qOk=(txt)=>!S.q||txt.toLowerCase().includes(S.q);
+const fMatch=f=>qOk(f.fichier+' '+f.entites.map(e=>e.id+' '+e.nom).join(' '));
+const aMatch=x=>qOk(x.nom+' '+x.id+' '+x.cassees.join(' '));
+const chips=(list,cur,cls)=>'<div class="chips">'+list.map(c=>'<button class="'+cls+(cur===c[0]?' on':'')+'" data-k="'+c[0]+'">'+esc(c[1])+' <span class="cnt">'+c[2]+'</span></button>').join('')+'</div>';
+const searchBox=()=>'<div class="search">'+SRCH+'<input id="q" type="search" placeholder="Rechercher un fichier ou une entité…" value="'+esc(S.q)+'" aria-label="Rechercher"></div>';
+function bindSearch(){const q=$('#q');if(!q)return;q.oninput=()=>{S.q=q.value.trim().toLowerCase();const p=q.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p);};}
+
+/* ---------- statistiques ---------- */
+function renderStats(){
+  const D=S.data;if(!D){$('#stats').innerHTML='';return;}
+  const sur=D.fichiers.filter(f=>f.verdict==='sur').length,ex=D.fichiers.filter(f=>f.verdict==='probable'||f.verdict==='attention').length;
+  const A=D.automatisations,aex=A?A.liste.filter(x=>x.raisons.length).length:null;
+  $('#stats').innerHTML='<div class="tiles">'
+   +'<button class="tile" data-go="files:cand"><b>'+D.nb_fichiers_analyses+'</b><span>fichiers analysés</span></button>'
+   +'<button class="tile ok" data-go="files:sur"><b>'+sur+'</b><span>fichiers sûrs à archiver</span></button>'
+   +'<button class="tile warn" data-go="files:cand"><b>'+ex+'</b><span>fichiers à examiner</span></button>'
+   +'<button class="tile bad" data-go="autos:prob"><b>'+(aex===null?'–':aex)+'</b><span>automatisations à examiner</span></button></div>';
+  $$('.tile').forEach(b=>b.onclick=()=>{const [t,f]=b.dataset.go.split(':');if(t==='files')S.ff=f;else S.af=f;tab(t);});
+  $('#sub').textContent='Dernière analyse : '+D.date+' — '+D.dossier;
+  $('#c-files').textContent=D.fichiers.filter(fPred.cand).length;$('#c-autos').textContent=aex===null?'–':aex;$('#c-arch').textContent=S.arch.length+S.autoarch.length;
+  $('#b-export').disabled=false;}
+
+/* ---------- fichiers ---------- */
+function renderFiles(){
+  const D=S.data;if(!D){$('#tab-files').innerHTML='<div class="empty">Cliquez sur « Analyser ».</div>';return;}
+  const F=D.fichiers,c=k=>F.filter(fPred[k]).length;
+  const list=F.filter(fPred[S.ff]).filter(fMatch).sort((a,b)=>(VORD[a.verdict]-VORD[b.verdict])||a.fichier.localeCompare(b.fichier));
+  let h='<div class="toolbar">'+searchBox()+'<button id="b-pick">Cocher les « Sûr »</button><button id="b-unpick" class="ghost">Tout décocher</button></div>'
+   +'<div class="toolbar">'+chips([['cand','Candidats',c('cand')],['sur','Sûrs',c('sur')],['probable','Probables',c('probable')],['attention','À vérifier',c('attention')],['partiel','Partiels',c('partiel')],['ok','Utilisés',c('ok')]],S.ff,'ff')+'</div>';
+  if(!list.length)h+='<div class="empty">Rien à afficher pour ce filtre.</div>';
+  h+='<div class="grid">'+list.map(f=>{const inu=f.statut==='inutilise';
+    const bc=inu?f.verdict:f.statut,bl=inu?V[f.verdict]:(f.statut==='partiel'?'Partiel '+f.utilisees+'/'+f.total:'Utilisé');
+    return '<div class="card v-'+f.verdict+'" data-f="'+esc(f.fichier)+'"><div class="row">'
+     +(inu?'<input type="checkbox" class="sel" '+(S.sel.has(f.fichier)?'checked':'')+' aria-label="Sélectionner '+esc(f.fichier)+'">':'<span style="width:26px"></span>')
+     +'<div class="grow"><div class="name">'+esc(f.fichier)+'</div><div class="meta"><span class="badge b-'+bc+'">'+esc(bl)+'</span><span>'+f.total+' entité'+(f.total>1?'s':'')+'</span></div>'
+     +(f.raisons&&f.raisons.length?'<div class="why">'+f.raisons.map(esc).join(' · ')+'</div>':'')+'</div>'
+     +'<button class="tg ghost" aria-label="Détails">'+CHEV+'</button></div><div class="det">'
+     +f.entites.map(e=>'<div class="ent"><span class="dot '+e.etat+'" title="'+esc(e.etat)+'"></span><div><b>'+esc(e.nom)+'</b>'+(e.id!==e.nom?' <code>'+esc(e.id)+'</code>':'')+'<br>'
+       +esc(etat(e))+' — '+(e.utilise?'cité dans '+e.cite_par.map(esc).join(', '):'cité nulle part')+'</div></div>').join('')+'</div></div>';}).join('')+'</div>'
+   +'<p class="note">Limites : un usage dynamique ou extérieur à Home Assistant (application, Alexa, modèle construit dynamiquement) n\'est pas détecté. Ce sont des candidats, pas des certitudes.</p>';
+  $('#tab-files').innerHTML=h;bindSearch();
+  $$('.ff').forEach(b=>b.onclick=()=>{S.ff=b.dataset.k;render();});
+  $('#b-pick').onclick=()=>{F.filter(f=>f.verdict==='sur').forEach(f=>S.sel.add(f.fichier));render();};
+  $('#b-unpick').onclick=()=>{S.sel.clear();render();};
+  $$('#tab-files .tg').forEach(b=>b.onclick=()=>{b.closest('.card').classList.toggle('open');});
+  $$('#tab-files .sel').forEach(x=>x.onchange=()=>{const n=x.closest('.card').dataset.f;x.checked?S.sel.add(n):S.sel.delete(n);bar();});}
+function etat(e){return e.etat==='vivante'?'active'+(e.age!=null?' (mise à jour il y a '+e.age+' j)':''):({absente:'absente de HA',indisponible:'indisponible',inconnu:'état inconnu'}[e.etat]||'?');}
+
+/* ---------- automatisations ---------- */
+function renderAutos(){
+  const a=S.data&&S.data.automatisations;
+  if(!S.data){$('#tab-autos').innerHTML='<div class="empty">Cliquez sur « Analyser ».</div>';return;}
+  if(!a){$('#tab-autos').innerHTML='<div class="empty">Les automatisations ne peuvent pas être analysées (API Home Assistant indisponible).</div>';return;}
+  const n=k=>a.liste.filter(x=>aPred[k](x,a)).length;
+  const list=a.liste.filter(x=>aPred[S.af](x,a)).filter(aMatch);
+  let h='<div class="toolbar">'+searchBox()+'<button id="a-pick">Cocher les désactivées</button><button id="a-unpick" class="ghost">Tout décocher</button></div>'
+   +'<div class="toolbar">'+chips([['prob','À examiner',n('prob')],['off','Désactivées',n('off')],['never','Jamais lancées',n('never')],['old','Anciennes (> '+a.jours+' j)',n('old')],['broken','Entités cassées',n('broken')],['all','Toutes',n('all')]],S.af,'af')+'</div>';
+  if(!list.length)h+='<div class="empty">Rien à afficher pour ce filtre.</div>';
+  h+='<div class="grid">'+list.map(x=>'<div class="card v-'+(x.raisons.length?'probable':'utilise')+'" data-u="'+esc(x.uid||'')+'"><div class="row">'
+    +(x.uid?'<input type="checkbox" class="sa" '+(S.sela.has(x.uid)?'checked':'')+' aria-label="Sélectionner '+esc(x.nom)+'">':'<span style="width:26px"></span>')
+    +'<div class="grow"><div class="name">'+esc(x.nom)+'</div><div class="why">'+esc(x.raisons.length?x.raisons.join(' · '):'Aucun problème détecté')+(x.uid?'':' · sans identifiant : non archivable ici (définie dans un fichier)')+'</div>'
+    +(x.cassees.length?'<div class="why"><code>'+x.cassees.map(esc).join(', ')+'</code></div>':'')+'</div></div></div>').join('')+'</div>';
+  $('#tab-autos').innerHTML=h;bindSearch();
+  $$('.af').forEach(b=>b.onclick=()=>{S.af=b.dataset.k;render();});
+  $('#a-pick').onclick=()=>{a.liste.filter(x=>x.desactivee&&x.uid).forEach(x=>S.sela.add(x.uid));render();};
+  $('#a-unpick').onclick=()=>{S.sela.clear();render();};
+  $$('.sa').forEach(x=>x.onchange=()=>{const u=x.closest('.card').dataset.u;x.checked?S.sela.add(u):S.sela.delete(u);bar();});}
+
+/* ---------- archive ---------- */
+function renderArch(){
+  const row=(nom,date,cls,val)=>'<div class="card"><div class="row"><div class="grow"><div class="name">'+esc(nom)+'</div><div class="why">'+esc(date||'')+'</div></div><button class="'+cls+'" data-f="'+esc(val)+'">Restaurer</button></div></div>';
+  let h='';
+  if(S.arch.length)h+='<h2>Fichiers archivés ('+S.arch.length+')</h2><div class="grid">'+S.arch.map(f=>row(f.fichier,f.date,'rs',f.fichier)).join('')+'</div>';
+  if(S.autoarch.length)h+='<h2>Automatisations archivées ('+S.autoarch.length+')</h2><div class="grid">'+S.autoarch.map(f=>row(f.nom,f.date,'ra',f.uid)).join('')+'</div>';
+  $('#tab-arch').innerHTML=h||'<div class="empty">Rien n\'est archivé pour le moment.</div>';
+  $$('.rs').forEach(b=>b.onclick=async()=>{try{const r=await api('api/restore',{fichiers:[b.dataset.f]});
+    toast(r.restaures.length?'Restauré : '+r.restaures.join(', ')+' — vérifiez la configuration puis redémarrez.':(r.erreurs[0]?r.erreurs[0].raison:''),r.restaures.length?'ok':'ko');await scan(true);await loadArch();}catch(e){toast('Erreur : '+e.message,'ko');}});
+  $$('.ra').forEach(b=>b.onclick=async()=>{try{const r=await api('api/autos/restore',{ids:[b.dataset.f]});
+    toast(r.restaures.length?'Restaurée : '+r.restaures.join(', ')+(r.recharge?' (automatisations rechargées).':' — rechargez les automatisations.'):(r.erreurs[0]?r.erreurs[0].raison:''),r.restaures.length?'ok':'ko');await scan(true);await loadArch();}catch(e){toast('Erreur : '+e.message,'ko');}});}
+async function loadArch(){
+  try{S.arch=(await api('api/archive')).archives;}catch(e){S.arch=[];}
+  try{S.autoarch=(await api('api/autos/archive')).autos;}catch(e){S.autoarch=[];}
+  $('#c-arch').textContent=S.arch.length+S.autoarch.length;renderArch();}
+
+/* ---------- rendu global ---------- */
+function render(){renderStats();renderFiles();renderAutos();bar();}
+
+/* ---------- actions ---------- */
+async function scan(silent){
+  const b=$('#b-scan');b.disabled=true;if(!silent)b.innerHTML='<span class="spin"></span>Analyse…';
+  try{S.data=await api('api/scan');S.sel.clear();S.sela.clear();
+    S.arch=(await api('api/archive').catch(()=>({archives:[]}))).archives;S.autoarch=(await api('api/autos/archive').catch(()=>({autos:[]}))).autos;
+    render();renderArch();if(S.data.avertissement)toast(S.data.avertissement,'ko');}
+  catch(e){toast('Erreur : '+e.message,'ko');}
+  b.disabled=false;b.innerHTML='<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>Analyser';}
+$('#b-scan').onclick=()=>scan();
+
+$('#b-act').onclick=async()=>{
+  if(S.tab==='autos'){
+    if(!S.sela.size)return;
+    const noms=S.data.automatisations.liste.filter(x=>S.sela.has(x.uid)).map(x=>x.nom);
+    if(!await confirmDlg({titre:'Archiver '+noms.length+' automatisation(s) ?',texte:"Elles sont retirées de automations.yaml (sauvegarde complète faite avant) et déplacées dans _archive. Restaurables à tout moment.",items:noms}))return;
+    try{const r=await api('api/autos/archive',{ids:[...S.sela]});
+      await scan(true);setMsg(r.archives.length+' archivée(s)'+(r.recharge?' — automatisations rechargées.':' — rechargez les automatisations (Outils de développement → YAML).'),'ok');
+      toast(r.archives.length+' automatisation(s) archivée(s).','ok');}catch(e){toast('Erreur : '+e.message,'ko');}
+    return;}
+  if(!S.sel.size)return;
+  const noms=[...S.sel],att=noms.filter(n=>(S.data.fichiers.find(f=>f.fichier===n)||{}).verdict==='attention');
+  if(!await confirmDlg({titre:'Archiver '+noms.length+' fichier(s) ?',texte:"Les fichiers sont déplacés dans _archive (rien n'est supprimé) et restaurables à tout moment.",items:noms,
+    warn:att.length?'À vérifier : '+att.join(', ')+' — contient une action (alerte, automatisation…) ou est cité par son nom.':''}))return;
+  try{const r=await api('api/archive',{fichiers:noms});
+    await scan(true);setMsg(r.archives.length+' archivé(s) — vérifiez la configuration, puis redémarrez Home Assistant.','ok');
+    toast(r.archives.length+' fichier(s) archivé(s).','ok');}catch(e){toast('Erreur : '+e.message,'ko');}};
+
+$('#b-check').onclick=async()=>{setMsg('Vérification…');
+  try{const r=await api('api/check',{});setMsg(esc(r.message),r.ok?'ok':r.ok===false?'ko':'');}catch(e){setMsg(esc(e.message),'ko');}};
+
+$('#b-export').onclick=()=>{
+  const D=S.data;if(!D)return;let t='# Rapport — Nettoyeur de configuration\n\nAnalyse du '+D.date+' ('+D.dossier+')\n\n';
+  for(const [k,titre] of [['sur','Fichiers sûrs à archiver'],['probable','Fichiers probables'],['attention','Fichiers à vérifier']]){
+    const l=D.fichiers.filter(f=>f.verdict===k);t+='## '+titre+' ('+l.length+')\n\n';
+    l.forEach(f=>{t+='- **'+f.fichier+'** — '+f.total+' entité(s)'+(f.raisons.length?' — '+f.raisons.join(' ; '):'')+'\n';});t+='\n';}
+  const A=D.automatisations;if(A){const l=A.liste.filter(x=>x.raisons.length);t+='## Automatisations à examiner ('+l.length+')\n\n';
+    l.forEach(x=>{t+='- **'+x.nom+'** — '+x.raisons.join(' ; ')+'\n';});}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/markdown'}));
+  a.download='rapport_nettoyeur_'+new Date().toISOString().slice(0,10)+'.md';document.body.appendChild(a);a.click();a.remove();};
+
+render();scan();
+</script>
+</body>
+</html>

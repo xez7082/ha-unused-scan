@@ -1,0 +1,4 @@
+configuration:
+  jours_inactifs:
+    name: Jours sans déclenchement
+    description: Une automatisation est signalée « ancienne » si elle ne s'est pas déclenchée depuis ce nombre de jours.

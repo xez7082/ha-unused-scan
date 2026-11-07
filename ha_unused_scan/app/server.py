@@ -58,7 +58,7 @@ def recharger_automations():
     req = urllib.request.Request(url + '/services/automation/reload', data=b'{}', method='POST',
                                  headers={'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json'})
     try:
-        urllib.request.urlopen(req, timeout=30).read()
+        urllib.request.urlopen(req, timeout=15).read()
         return True
     except Exception:  # noqa
         return False
@@ -127,7 +127,7 @@ class Handler(BaseHTTPRequestHandler):
             elif path == '/api/restore':
                 self._json(archive.restaurer(noms))
             elif path == '/api/autos/archive':
-                r = archive.archiver_autos(data.get('ids') or [])
+                r = archive.archiver_autos(data.get('ids') or [], data.get('noms') or {})
                 r['recharge'] = recharger_automations() if r['archives'] else False
                 self._json(r)
             elif path == '/api/autos/restore':

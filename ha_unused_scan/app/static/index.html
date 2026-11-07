@@ -124,7 +124,9 @@ const V={sur:'Sûr',probable:'Probable',attention:'À vérifier'}, VORD={sur:0,p
 const S={data:null,arch:[],autoarch:[],tab:'files',sel:new Set(),sela:new Set(),ff:'cand',af:'prob',q:'',qraw:''};
 
 async function api(p,body){
-  const r=await fetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
+  const ac=new AbortController(),to=setTimeout(()=>ac.abort(),90000);let r;
+  try{r=await fetch(p,Object.assign({signal:ac.signal},body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{}));}
+  catch(e){throw new Error(e.name==='AbortError'?'délai dépassé (90 s)':e.message);}finally{clearTimeout(to);}
   const d=await r.json(); if(!r.ok||d.erreur) throw new Error(d.erreur||r.status); return d;}
 let tt;function toast(m,k){const e=$('#toast');e.textContent=m;e.className='toast '+(k||'');e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,7000);}
 function setMsg(html,k){const m=$('#msg');m.className='msg '+(k||'');m.innerHTML=html;m.dataset.keep='1';}
@@ -159,8 +161,8 @@ const qOk=(txt)=>{if(!S.q)return true;const t=norm(txt);return S.q.split(/\s+/).
 const fMatch=f=>qOk(f.fichier+' '+(f.raisons||[]).join(' ')+' '+f.entites.map(e=>e.id+' '+e.nom+' '+(e.cite_par||[]).join(' ')).join(' '));
 const aMatch=x=>qOk(x.nom+' '+(x.id||'')+' '+(x.uid||'')+' '+x.cassees.join(' ')+' '+x.raisons.join(' '));
 const chips=(list,cur,cls)=>'<div class="chips">'+list.map(c=>'<button class="'+cls+(cur===c[0]?' on':'')+'" data-k="'+c[0]+'">'+esc(c[1])+' <span class="cnt">'+c[2]+'</span></button>').join('')+'</div>';
-const searchBox=()=>'<div class="search">'+SRCH+'<input id="q" type="search" placeholder="Rechercher un fichier ou une entité…" value="'+esc(S.qraw)+'" aria-label="Rechercher"></div>';
-function bindSearch(){const q=$('#q');if(!q)return;q.oninput=()=>{S.qraw=q.value;S.q=norm(q.value.trim());const p=q.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(p,p);};}
+const searchBox=t=>'<div class="search">'+SRCH+'<input id="q-'+t+'" type="search" placeholder="Rechercher un fichier ou une entité…" value="'+esc(S.qraw)+'" aria-label="Rechercher"></div>';
+function bindSearch(t){const q=$('#q-'+t);if(!q)return;q.oninput=()=>{S.qraw=q.value;S.q=norm(q.value.trim());const p=q.selectionStart;render();const n=$('#q-'+t);if(n){n.focus();n.setSelectionRange(p,p);}};}
 
 /* ---------- statistiques ---------- */
 function renderStats(){
@@ -182,7 +184,7 @@ function renderFiles(){
   const D=S.data;if(!D){$('#tab-files').innerHTML='<div class="empty">Cliquez sur « Analyser ».</div>';return;}
   const F=D.fichiers,c=k=>F.filter(fPred[k]).length;
   const list=(S.q?F:F.filter(fPred[S.ff])).filter(fMatch).sort((a,b)=>(VORD[a.verdict]-VORD[b.verdict])||a.fichier.localeCompare(b.fichier));
-  let h='<div class="toolbar">'+searchBox()+'<button id="b-pick">Cocher les « Sûr »</button><button id="b-unpick" class="ghost">Tout décocher</button></div>'
+  let h='<div class="toolbar">'+searchBox('files')+'<button id="b-pick">Cocher les « Sûr »</button><button id="b-unpick" class="ghost">Tout décocher</button></div>'
    +'<div class="toolbar">'+chips([['cand','Candidats',c('cand')],['sur','Sûrs',c('sur')],['probable','Probables',c('probable')],['attention','À vérifier',c('attention')],['partiel','Partiels',c('partiel')],['ok','Utilisés',c('ok')]],S.ff,'ff')+'</div>';
   if(S.q)h+='<p class="note" role="status">'+(list.length?list.length+' résultat(s)':'Aucun résultat')+' pour « '+esc(S.qraw.trim())+' » dans tous les éléments (le filtre est ignoré pendant la recherche).</p>';
   if(!list.length&&!S.q)h+='<div class="empty">Rien à afficher pour ce filtre.</div>';
@@ -196,7 +198,7 @@ function renderFiles(){
      +f.entites.map(e=>'<div class="ent"><span class="dot '+e.etat+'" title="'+esc(e.etat)+'"></span><div><b>'+esc(e.nom)+'</b>'+(e.id!==e.nom?' <code>'+esc(e.id)+'</code>':'')+'<br>'
        +esc(etat(e))+' — '+(e.utilise?'cité dans '+e.cite_par.map(esc).join(', '):'cité nulle part')+'</div></div>').join('')+'</div></div>';}).join('')+'</div>'
    +'<p class="note">Limites : un usage dynamique ou extérieur à Home Assistant (application, Alexa, modèle construit dynamiquement) n\'est pas détecté. Ce sont des candidats, pas des certitudes.</p>';
-  $('#tab-files').innerHTML=h;bindSearch();
+  $('#tab-files').innerHTML=h;bindSearch('files');
   $$('.ff').forEach(b=>b.onclick=()=>{S.ff=b.dataset.k;render();});
   $('#b-pick').onclick=()=>{F.filter(f=>f.verdict==='sur').forEach(f=>S.sel.add(f.fichier));render();};
   $('#b-unpick').onclick=()=>{S.sel.clear();render();};
@@ -211,7 +213,7 @@ function renderAutos(){
   if(!a){$('#tab-autos').innerHTML='<div class="empty">Les automatisations ne peuvent pas être analysées (API Home Assistant indisponible).</div>';return;}
   const n=k=>a.liste.filter(x=>aPred[k](x,a)).length;
   const list=(S.q?a.liste:a.liste.filter(x=>aPred[S.af](x,a))).filter(aMatch);
-  let h='<div class="toolbar">'+searchBox()+'<button id="a-pick">Cocher les désactivées</button><button id="a-unpick" class="ghost">Tout décocher</button></div>'
+  let h='<div class="toolbar">'+searchBox('autos')+'<button id="a-pick">Cocher les désactivées</button><button id="a-unpick" class="ghost">Tout décocher</button></div>'
    +'<div class="toolbar">'+chips([['prob','À examiner',n('prob')],['off','Désactivées',n('off')],['never','Jamais lancées',n('never')],['old','Anciennes (> '+a.jours+' j)',n('old')],['broken','Entités cassées',n('broken')],['all','Toutes',n('all')]],S.af,'af')+'</div>';
   if(S.q)h+='<p class="note" role="status">'+(list.length?list.length+' résultat(s)':'Aucun résultat')+' pour « '+esc(S.qraw.trim())+' » dans tous les éléments (le filtre est ignoré pendant la recherche).</p>';
   if(!list.length&&!S.q)h+='<div class="empty">Rien à afficher pour ce filtre.</div>';
@@ -219,7 +221,7 @@ function renderAutos(){
     +(x.uid?'<input type="checkbox" class="sa" '+(S.sela.has(x.uid)?'checked':'')+' aria-label="Sélectionner '+esc(x.nom)+'">':'<span style="width:26px"></span>')
     +'<div class="grow"><div class="name">'+esc(x.nom)+'</div><div class="why">'+esc(x.raisons.length?x.raisons.join(' · '):'Aucun problème détecté')+(x.uid?'':' · sans identifiant : non archivable ici (définie dans un fichier)')+'</div>'
     +(x.cassees.length?'<div class="why"><code>'+x.cassees.map(esc).join(', ')+'</code></div>':'')+'</div></div></div>').join('')+'</div>';
-  $('#tab-autos').innerHTML=h;bindSearch();
+  $('#tab-autos').innerHTML=h;bindSearch('autos');
   $$('.af').forEach(b=>b.onclick=()=>{S.af=b.dataset.k;render();});
   $('#a-pick').onclick=()=>{a.liste.filter(x=>x.desactivee&&x.uid).forEach(x=>S.sela.add(x.uid));render();};
   $('#a-unpick').onclick=()=>{S.sela.clear();render();};
@@ -259,9 +261,17 @@ $('#b-act').onclick=async()=>{
     if(!S.sela.size)return;
     const noms=S.data.automatisations.liste.filter(x=>S.sela.has(x.uid)).map(x=>x.nom);
     if(!await confirmDlg({titre:'Archiver '+noms.length+' automatisation(s) ?',texte:"Elles sont retirées de automations.yaml (sauvegarde complète faite avant) et déplacées dans _archive. Restaurables à tout moment.",items:noms}))return;
-    try{const r=await api('api/autos/archive',{ids:[...S.sela]});
-      await scan(true);setMsg(r.archives.length+' archivée(s)'+(r.recharge?' — automatisations rechargées.':' — rechargez les automatisations (Outils de développement → YAML).'),'ok');
-      toast(r.archives.length+' automatisation(s) archivée(s).','ok');}catch(e){toast('Erreur : '+e.message,'ko');}
+    const btn=$('#b-act'),lib=btn.innerHTML;btn.disabled=true;btn.innerHTML='<span class="spin"></span>Archivage…';
+    try{const noms2={};S.data.automatisations.liste.forEach(x=>{if(S.sela.has(x.uid))noms2[x.uid]=x.nom;});
+      const r=await api('api/autos/archive',{ids:[...S.sela],noms:noms2});
+      const er=(r.erreurs||[]).map(e=>e.id+' : '+e.raison);
+      if(r.archives.length){S.sela.clear();}
+      await scan(true);
+      if(!r.archives.length){setMsg('Aucune automatisation archivée. '+esc(er.join(' ; ')||'Rien à faire.'),'ko');toast('Rien n\'a été archivé : '+(er[0]||'introuvable'),'ko');}
+      else{setMsg(r.archives.length+' archivée(s)'+(r.recharge?' — automatisations rechargées.':' — rechargez les automatisations (Outils de développement → YAML).')+(er.length?' · Non trouvées : '+esc(er.join(' ; ')):''),er.length?'ko':'ok');
+        toast(r.archives.length+' automatisation(s) archivée(s).','ok');}
+    }catch(e){toast('Erreur : '+e.message,'ko');setMsg('Erreur : '+esc(e.message),'ko');}
+    btn.innerHTML=lib;bar();
     return;}
   if(!S.sel.size)return;
   const noms=[...S.sel],att=noms.filter(n=>(S.data.fichiers.find(f=>f.fichier===n)||{}).verdict==='attention');

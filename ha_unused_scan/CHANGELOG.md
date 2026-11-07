@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3
+- Onglet Automatisations : la recherche fonctionne (deux champs de recherche avaient le même identifiant).
+- Archivage des automatisations : bouton « Archivage… » pendant l'opération, résultat toujours affiché (y compris les automatisations introuvables), délai maximum de 90 s au lieu d'un cercle qui tourne sans fin.
+- Si l'identifiant d'une automatisation ne correspond pas au fichier, repli sur son nom (s'il est unique).
+- Rechargement des automatisations limité à 15 s.
+
 ## 1.0.2
 - La page du module n'est plus mise en cache par le navigateur : une mise à jour s'affiche tout de suite (plus besoin de vider le cache).
 

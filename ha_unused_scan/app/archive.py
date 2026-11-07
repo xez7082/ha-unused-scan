@@ -148,7 +148,7 @@ def _ecrire_liste(p, entete, blocs):
     _ecrire(p, (entete + ''.join(blocs)) if blocs else '[]\n')
 
 
-def archiver_autos(uids):
+def archiver_autos(uids, noms=None):
     base = config_dir()
     arc = os.path.join(base, '_archive')
     os.makedirs(arc, exist_ok=True)
@@ -157,10 +157,26 @@ def archiver_autos(uids):
     entete, blocs = _blocs(txt)
     voulus = set(u for u in uids if u)
     garde, deplaces = [], []
+    noms = noms or {}
+    # repli : si l'identifiant n'est pas dans le fichier, on cherche l'alias (seulement s'il est unique)
+    alias_de = {}
     for b in blocs:
-        (deplaces if _uid(b) in voulus else garde).append(b)
-    trouves = {_uid(b) for b in deplaces}
-    erreurs = [{'id': u, 'raison': 'introuvable dans automations.yaml'} for u in sorted(voulus - trouves)]
+        alias_de.setdefault(_alias(b), []).append(b)
+    par_alias = {}
+    for u in voulus:
+        if not any(_uid(b) == u for b in blocs) and noms.get(u) and len(alias_de.get(noms[u], [])) == 1:
+            par_alias[id(alias_de[noms[u]][0])] = u
+    trouves = set()
+    for b in blocs:
+        if _uid(b) in voulus:
+            deplaces.append(b)
+            trouves.add(_uid(b))
+        elif id(b) in par_alias and _uid(b):
+            deplaces.append(b)
+            trouves.add(par_alias[id(b)])
+        else:
+            garde.append(b)
+    erreurs = [{'id': noms.get(u, u), 'raison': 'introuvable dans automations.yaml (définie ailleurs ?)'} for u in sorted(voulus - trouves)]
     if not deplaces:
         return {'archives': [], 'erreurs': erreurs}
     _ecrire(os.path.join(arc, 'automations_%s.sauvegarde.yaml' % datetime.now().strftime('%Y%m%d-%H%M%S')), txt)

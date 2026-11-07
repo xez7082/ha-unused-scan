@@ -1,5 +1,5 @@
 name: "Nettoyeur de configuration"
-version: "1.0.1"
+version: "1.0.3"
 slug: ha_unused_scan
 description: "Repère les fichiers packages et automatisations Home Assistant qui ne servent plus, et les archive de façon réversible."
 url: "https://github.com/xez7082/ha-unused-scan"

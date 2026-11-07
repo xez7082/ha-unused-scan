@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.2
+- La page du module n'est plus mise en cache par le navigateur : une mise à jour s'affiche tout de suite (plus besoin de vider le cache).
+
 ## 1.0.1
 - Recherche corrigée : elle cherche maintenant dans tous les fichiers et toutes les automatisations (plus seulement dans le filtre actif), sans tenir compte des accents ni des majuscules, avec plusieurs mots et des espaces.
 - Compteur de résultats affiché pendant la recherche.
